@@ -1,0 +1,11 @@
+{
+	"name": "ls_adlsgen2",
+	"properties": {
+		"description": "linked service for adls gen 2.",
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "https://wecareadls.dfs.core.windows.net/"
+		}
+	}
+}

@@ -1,0 +1,11 @@
+{
+	"name": "ls_keyvault",
+	"properties": {
+		"description": "linked service for key vault",
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://kv-wecare.vault.azure.net/"
+		}
+	}
+}

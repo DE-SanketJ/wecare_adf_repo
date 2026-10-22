@@ -1,0 +1,33 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-wecare"
+		},
+		"ls_PostgreSql_properties_typeProperties_server": {
+			"value": "ep-summer-scene-b47ktykj-pooler.c-6.us-east-2.aws.neon.tech"
+		},
+		"ls_PostgreSql_properties_typeProperties_database": {
+			"value": "neondb"
+		},
+		"ls_PostgreSql_properties_typeProperties_username": {
+			"value": "neondb_owner"
+		},
+		"ls_adlsgen2_properties_typeProperties_url": {
+			"value": "https://wecareadls.dfs.core.windows.net/"
+		},
+		"ls_keyvault_properties_typeProperties_baseUrl": {
+			"value": "https://kv-wecare.vault.azure.net/"
+		},
+		"ls_sqldb_properties_typeProperties_server": {
+			"value": "wecare-server.database.windows.net"
+		},
+		"ls_sqldb_properties_typeProperties_database": {
+			"value": "sql-db-wecare"
+		},
+		"ls_sqldb_properties_typeProperties_userName": {
+			"value": "sanket"
+		}
+	}
+}

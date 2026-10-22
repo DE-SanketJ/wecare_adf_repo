@@ -1,0 +1,24 @@
+{
+	"name": "ls_sqldb",
+	"properties": {
+		"description": "Linked service for Sql Db.",
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "wecare-server.database.windows.net",
+			"database": "sql-db-wecare",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "sanket",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_keyvault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "dbpassword"
+			}
+		}
+	}
+}

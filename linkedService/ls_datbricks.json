@@ -13,8 +13,7 @@
 					"type": "LinkedServiceReference"
 				},
 				"secretName": "databricksaccesstoken"
-			},
-			"existingClusterId": "1022-093831-pcym6r2z"
+			}
 		}
 	}
 }

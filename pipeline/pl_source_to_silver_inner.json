@@ -186,11 +186,11 @@
 					"notebookPath": "/wecare-repo/wecare-adb-repo/Bronze_to_Silver",
 					"baseParameters": {
 						"landing_timestamp": {
-							"value": "@activity('read_table_details').output.firstRow.silver_table_name",
+							"value": "@variables('start_time')",
 							"type": "Expression"
 						},
 						"table_name": {
-							"value": "@variables('start_time')",
+							"value": "@activity('read_table_details').output.firstRow.silver_table_name",
 							"type": "Expression"
 						}
 					}

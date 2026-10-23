@@ -23,6 +23,10 @@
 			"type": "string",
 			"defaultValue": "https://wecareadls.dfs.core.windows.net/"
 		},
+		"ls_datbricks_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "1023-062516-mv5eacnv"
+		},
 		"ls_keyvault_properties_typeProperties_baseUrl": {
 			"type": "string",
 			"defaultValue": "https://kv-wecare.vault.azure.net/"
@@ -80,6 +84,9 @@
 					},
 					"ls_PostgreSql_properties_typeProperties_username": {
 						"value": "[parameters('ls_PostgreSql_properties_typeProperties_username')]"
+					},
+					"ls_datbricks_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('ls_datbricks_properties_typeProperties_existingClusterId')]"
 					},
 					"ls_sqldb_properties_typeProperties_server": {
 						"value": "[parameters('ls_sqldb_properties_typeProperties_server')]"

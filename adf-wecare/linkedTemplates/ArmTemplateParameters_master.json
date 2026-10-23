@@ -17,6 +17,9 @@
 		"ls_adlsgen2_properties_typeProperties_url": {
 			"value": "https://wecareadls.dfs.core.windows.net/"
 		},
+		"ls_datbricks_properties_typeProperties_existingClusterId": {
+			"value": "1023-062516-mv5eacnv"
+		},
 		"ls_keyvault_properties_typeProperties_baseUrl": {
 			"value": "https://kv-wecare.vault.azure.net/"
 		},

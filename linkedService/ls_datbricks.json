@@ -1,0 +1,20 @@
+{
+	"name": "ls_datbricks",
+	"properties": {
+		"description": "Computer linked service for adb wecare workspace in databricks",
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-7405618971464550.10.azuredatabricks.net",
+			"accessToken": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_keyvault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "databricksaccesstoken"
+			},
+			"existingClusterId": "1022-093831-pcym6r2z"
+		}
+	}
+}

@@ -1,0 +1,175 @@
+{
+	"name": "backup_pl_source_silver_main_",
+	"properties": {
+		"activities": [
+			{
+				"name": "Read Source Tables List",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT table_id FROM CTRL.TABLE_CONFIG WHERE IS_ACTIVE=1 AND SOURCE_SYSTEM='@{pipeline().parameters.source_system}'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlTable1",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ingestalltables",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Read Source Tables List",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Read Source Tables List').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "Insert In Progress Status",
+							"type": "Script",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "ls_sqldb",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "insert into ctrl.audit_log(adf_run_id, table_id, stage, STATUS,\nstart_time\n)\nVALUES( '@{pipeline().parameters.adf_run_id}',\n@{item().table_id},\n'SOURCE_TO_SILVER',\n'IN_PROGRESS',\nSYSUTCDATETIME()\n)",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "update failed status",
+							"type": "Script",
+							"dependsOn": [
+								{
+									"activity": "Execute Pipeline1",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "ls_sqldb",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "update\nctrl.audit_log\nSET\nSTATUS='FAILED',\nend_time=SYSUTCDATETIME()\nwhere adf_run_id=@{pipeline().parameters.adf_run_id} and table_id=@{item().table_id}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "Execute Pipeline1",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "Insert In Progress Status",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_source_to_silver_inner",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"table_id": {
+										"value": "@item().table_id",
+										"type": "Expression"
+									},
+									"adf_run_id": {
+										"value": "@pipeline().parameters.adf_run_id",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"source_system": {
+				"type": "string",
+				"defaultValue": "neon_postgres"
+			},
+			"adf_run_id": {
+				"type": "string",
+				"defaultValue": "a3"
+			}
+		},
+		"variables": {
+			"test": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "backup"
+		},
+		"annotations": []
+	}
+}

@@ -228,7 +228,7 @@
 						{
 							"type": "Query",
 							"text": {
-								"value": "update\nctrl.audit_log\nSET\nSTATUS='SUCCESS',\nRECORDS_WRITTEN=@{activity('Bronze_Silver').output.runOutput},\nend_time=SYSUTCDATETIME()\nwhere adf_run_id=@{pipeline().parameters.adf_run_id} and table_id=@{pipeline().parameters.table_id}",
+								"value": "update\nctrl.audit_log\nSET\nSTATUS='SUCCESS',\nRECORDS_WRITTEN=@{activity('Bronze_Silver').output.runOutput},\nend_time=SYSUTCDATETIME()\nwhere adf_run_id='@{pipeline().parameters.adf_run_id}' and table_id=@{pipeline().parameters.table_id}",
 								"type": "Expression"
 							}
 						}

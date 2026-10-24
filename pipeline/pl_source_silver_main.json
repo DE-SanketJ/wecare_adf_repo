@@ -54,7 +54,7 @@
 							"type": "ExecutePipeline",
 							"dependsOn": [
 								{
-									"activity": "Script1",
+									"activity": "Insert In Progress Status",
 									"dependencyConditions": [
 										"Succeeded"
 									]
@@ -74,17 +74,21 @@
 									"table_id": {
 										"value": "@item().table_id",
 										"type": "Expression"
+									},
+									"adf_run_id": {
+										"value": "@pipeline().parameters.adf_run_id",
+										"type": "Expression"
 									}
 								}
 							}
 						},
 						{
-							"name": "Script1",
+							"name": "Insert In Progress Status",
 							"type": "Script",
 							"dependsOn": [],
 							"policy": {
 								"timeout": "0.12:00:00",
-								"retry": 0,
+								"retry": 2,
 								"retryIntervalInSeconds": 30,
 								"secureOutput": false,
 								"secureInput": false
@@ -97,7 +101,76 @@
 							"typeProperties": {
 								"scripts": [
 									{
-										"type": "Query"
+										"type": "Query",
+										"text": {
+											"value": "insert into ctrl.audit_log\n(\n@{pipeline().parameters.adf_run_id},\n@{item().table_id},\nstage,\nSTATUS,\nstart_time\n)\nVALUES(\n'a1',\n1,\n'SOURCE_TO_SILVER',\n'IN_PROGRESS',\nSYSUTCDATETIME()\n)",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "update failed status",
+							"type": "Script",
+							"dependsOn": [
+								{
+									"activity": "Ingest from Source to Silver",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "ls_sqldb",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "update\nctrl.audit_log\nSET\nSTATUS='FAILED',\nend_time=SYSUTCDATETIME()\nwhere adf_run_id=@{pipeline().parameters.adf_run_id} and table_id=@{item().table_id}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "update failed status_copy1",
+							"type": "Script",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "ls_sqldb",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "update\nctrl.audit_log\nSET\nSTATUS='FAILED',\nend_time=SYSUTCDATETIME()\nwhere adf_run_id=@{pipeline().parameters.adf_run_id} and table_id=@{item().table_id}",
+											"type": "Expression"
+										}
 									}
 								],
 								"scriptBlockExecutionTimeout": "02:00:00"
@@ -111,6 +184,10 @@
 			"source_system": {
 				"type": "string",
 				"defaultValue": "neon_postgres"
+			},
+			"adf_run_id": {
+				"type": "string",
+				"defaultValue": "a2"
 			}
 		},
 		"variables": {

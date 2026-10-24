@@ -1,0 +1,257 @@
+{
+	"name": "backup_pl_source_to_silver_inner_copy1",
+	"properties": {
+		"activities": [
+			{
+				"name": "read_table_details",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select * from ctrl.table_config where table_id=@{pipeline().parameters.table_id}",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlTable1",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Set Start Time",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "start_time",
+					"value": {
+						"value": "@formatDateTime(utcNow(),'yyyy-MM-dd_hh:mm:ss')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Source_Landing",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "read_table_details",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set Start Time",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "PostgreSqlV2Source",
+						"query": {
+							"value": "select * from @{activity('read_table_details').output.firstRow.source_table_name}",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "PostgreSqlTable1",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_adls_parquet",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": "landing",
+							"folder": {
+								"value": "@concat(\n    activity('read_table_details').output.firstRow.source_system,\n    '/',\n    activity('read_table_details').output.firstRow.source_table_name,\n    '/',\n    variables('start_time')\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Landing_Bronze",
+				"description": "This notebook is for loading data landing to bronze.",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Source_Landing",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/wecare-repo/wecare-adb-repo/Landing_to_Bronze",
+					"baseParameters": {
+						"landing_timestamp": {
+							"value": "@variables('start_time')",
+							"type": "Expression"
+						},
+						"source_system": {
+							"value": "@activity('read_table_details').output.firstRow.source_system",
+							"type": "Expression"
+						},
+						"table_name": {
+							"value": "@activity('read_table_details').output.firstRow.bronze_table_name",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_datbricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Bronze_Silver",
+				"description": "This notebook is loading data from bronze to silver.",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Landing_Bronze",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/wecare-repo/wecare-adb-repo/Bronze_to_Silver",
+					"baseParameters": {
+						"landing_timestamp": {
+							"value": "@variables('start_time')",
+							"type": "Expression"
+						},
+						"table_name": {
+							"value": "@activity('read_table_details').output.firstRow.silver_table_name",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_datbricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "update success status_copy1",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Bronze_Silver",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "ls_sqldb",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "update\nctrl.audit_log\nSET\nSTATUS='SUCCESS',\nRECORDS_WRITTEN=@{activity('Bronze_Silver').output.runOutput},\nend_time=SYSUTCDATETIME()\nwhere adf_run_id='@{pipeline().parameters.adf_run_id}' and table_id=@{pipeline().parameters.table_id}",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			}
+		],
+		"parameters": {
+			"table_id": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"adf_run_id": {
+				"type": "string",
+				"defaultValue": "a1"
+			}
+		},
+		"variables": {
+			"start_time": {
+				"type": "String"
+			}
+		},
+		"annotations": []
+	}
+}

@@ -2654,6 +2654,23 @@
 								}
 							}
 						}
+					},
+					{
+						"name": "Pipeline Gold Satus Fail",
+						"type": "Fail",
+						"dependsOn": [
+							{
+								"activity": "Silver to gold",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"message": "Gold Pipeline Failure",
+							"errorCode": "500"
+						}
 					}
 				],
 				"policy": {

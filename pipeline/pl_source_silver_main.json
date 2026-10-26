@@ -147,6 +147,23 @@
 									}
 								}
 							}
+						},
+						{
+							"name": "Update pipeline is failed",
+							"type": "Fail",
+							"dependsOn": [
+								{
+									"activity": "Execute Pipeline1",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"message": "Inner Pipeline failed",
+								"errorCode": "500"
+							}
 						}
 					]
 				}

@@ -546,6 +546,229 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/pl_send_email')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Read all stable status",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 2,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "select * from ctrl.audit_log where adf_run_id='@{pipeline().parameters.adf_run_id}'",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "AzureSqlTable1",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Prepare Email Body Header",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "body_header",
+							"value": "Ingestion and transformation process for Wecare project has been completed and below is the status."
+						}
+					},
+					{
+						"name": "Prepare Email footer",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "mail_footer",
+							"value": "For any support please reach out to me."
+						}
+					},
+					{
+						"name": "Prepare Email Subject",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "check overall failed count",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "email_subject",
+							"value": {
+								"value": "@{pipeline().globalParameters.env} | @{\n    if(greater(activity('check overall failed count').output.firstRow.count,0),'FAILED','SUCESS')\n} | WECARE MASTER RUN",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "check overall failed count",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 2,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "select count(*) as count from ctrl.audit_log where adf_run_id='@{pipeline().parameters.adf_run_id}'\nand STATUS !='SUCCESS'",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "AzureSqlTable1",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "Prepare Logic app body",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "Prepare Email Subject",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Read all stable status",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Prepare Email Body Header",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Prepare Email footer",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "logic_app_body",
+							"value": {
+								"value": "{\n  \"subject\": \"@{variables('email_subject')}\",\n  \"email_receipients\": \"@{pipeline().globalParameters.email_recipients}\",\n  \"body_header\": \"@{variables('body_header')}\",\n  \"body_footer\": \"@{variables('mail_footer')}\",\n  \"status_table\": @{activity('Read all stable status').output.value}\n}\n",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Send Email",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Prepare Logic app body",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {
+								"Content-Type": "application/json"
+							},
+							"url": {
+								"value": "@pipeline().globalParameters.logic_app_url",
+								"type": "Expression"
+							},
+							"body": {
+								"value": "@variables('logic_app_body')",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"adf_run_id": {
+						"type": "string",
+						"defaultValue": "25a3972a-cf6b-445e-a8ff-0966e3696106"
+					}
+				},
+				"variables": {
+					"body_header": {
+						"type": "String"
+					},
+					"mail_footer": {
+						"type": "String"
+					},
+					"email_subject": {
+						"type": "String"
+					},
+					"logic_app_body": {
+						"type": "String"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/AzureSqlTable1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/pl_silver_to_gold')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -2656,20 +2879,32 @@
 						}
 					},
 					{
-						"name": "Pipeline Gold Satus Fail",
-						"type": "Fail",
+						"name": "Email Send",
+						"type": "ExecutePipeline",
 						"dependsOn": [
 							{
 								"activity": "Silver to gold",
 								"dependencyConditions": [
-									"Failed"
+									"Completed"
 								]
 							}
 						],
+						"policy": {
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
-							"message": "Gold Pipeline Failure",
-							"errorCode": "500"
+							"pipeline": {
+								"referenceName": "pl_send_email",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"adf_run_id": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							}
 						}
 					}
 				],
@@ -2680,7 +2915,8 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/pl_source_silver_main')]",
-				"[concat(variables('factoryId'), '/pipelines/pl_silver_to_gold')]"
+				"[concat(variables('factoryId'), '/pipelines/pl_silver_to_gold')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_send_email')]"
 			]
 		}
 	]

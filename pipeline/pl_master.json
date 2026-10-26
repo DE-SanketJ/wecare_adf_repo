@@ -84,20 +84,32 @@
 				}
 			},
 			{
-				"name": "Pipeline Gold Satus Fail",
-				"type": "Fail",
+				"name": "Email Send",
+				"type": "ExecutePipeline",
 				"dependsOn": [
 					{
 						"activity": "Silver to gold",
 						"dependencyConditions": [
-							"Failed"
+							"Completed"
 						]
 					}
 				],
+				"policy": {
+					"secureInput": false
+				},
 				"userProperties": [],
 				"typeProperties": {
-					"message": "Gold Pipeline Failure",
-					"errorCode": "500"
+					"pipeline": {
+						"referenceName": "pl_send_email",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"adf_run_id": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						}
+					}
 				}
 			}
 		],

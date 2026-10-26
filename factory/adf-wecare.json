@@ -1,0 +1,12 @@
+{
+	"name": "adf-wecare",
+	"properties": {
+		"globalParameters": {
+			"email_recipients": {
+				"type": "string",
+				"value": "sanketjadhav2027@gmail.com"
+			}
+		}
+	},
+	"location": "centralindia"
+}

@@ -731,6 +731,23 @@
 										],
 										"scriptBlockExecutionTimeout": "02:00:00"
 									}
+								},
+								{
+									"name": "Update pipeline as failed",
+									"type": "Fail",
+									"dependsOn": [
+										{
+											"activity": "Silver_to_Gold",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"message": "Gold notebook failed",
+										"errorCode": "500"
+									}
 								}
 							]
 						}
@@ -2316,6 +2333,23 @@
 												"type": "Expression"
 											}
 										}
+									}
+								},
+								{
+									"name": "Update pipeline is failed",
+									"type": "Fail",
+									"dependsOn": [
+										{
+											"activity": "Execute Pipeline1",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"message": "Inner Pipeline failed",
+										"errorCode": "500"
 									}
 								}
 							]
